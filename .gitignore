@@ -1,0 +1,14 @@
+.build/
+.swiftpm/
+*.xcodeproj
+*.xcworkspace
+DerivedData/
+
+# Built by build-app.sh; never committed.
+PrettyPrompt.app/
+dist/
+
+# Machine-specific mise overrides.
+mise.local.toml
+
+.DS_Store

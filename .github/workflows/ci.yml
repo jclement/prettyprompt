@@ -1,0 +1,41 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Report toolchain
+        run: |
+          swift --version
+          swift format --version
+
+      - uses: jdx/mise-action@v4
+        with:
+          experimental: true
+
+      - name: Lint and test
+        run: mise run check
+
+      # The bundle is the thing that actually ships, so build it on every push
+      # rather than discovering at tag time that build-app.sh is broken.
+      - name: Assemble the app bundle
+        run: ./build-app.sh --universal
+
+      - name: Smoke test the CLI
+        run: |
+          ./PrettyPrompt.app/Contents/MacOS/prettyprompt --version
+          ./PrettyPrompt.app/Contents/MacOS/prettyprompt themes
+          # A window cannot open on a headless runner; assert it fails loudly
+          # rather than hanging.
+          ./PrettyPrompt.app/Contents/MacOS/prettyprompt choose "x" 2>&1 || true

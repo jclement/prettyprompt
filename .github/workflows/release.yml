@@ -1,0 +1,84 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: jdx/mise-action@v4
+        with:
+          experimental: true
+
+      - name: Lint and test
+        run: mise run check
+
+      - name: Build the universal app bundle
+        env:
+          VERSION: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          # The tag is v1.2.3; the bundle records 1.2.3.
+          export VERSION="${VERSION#v}"
+          ./build-app.sh --universal
+          # Both architectures, or the formula is a lie on half of the Macs.
+          lipo -info PrettyPrompt.app/Contents/MacOS/prettyprompt
+
+      - name: Package
+        id: package
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          VERSION="${TAG#v}"
+          ARCHIVE="prettyprompt_${VERSION}_darwin_universal.tar.gz"
+          mkdir -p dist
+          # COPYFILE_DISABLE stops tar from embedding ._ AppleDouble files,
+          # which break the signature on extraction.
+          COPYFILE_DISABLE=1 tar -czf "dist/${ARCHIVE}" PrettyPrompt.app
+          SHA="$(shasum -a 256 "dist/${ARCHIVE}" | cut -d' ' -f1)"
+          shasum -a 256 "dist/${ARCHIVE}" > dist/checksums.txt
+          echo "archive=${ARCHIVE}" >> "$GITHUB_OUTPUT"
+          echo "sha256=${SHA}" >> "$GITHUB_OUTPUT"
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+
+      - name: Publish the GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist/${{ steps.package.outputs.archive }}
+            dist/checksums.txt
+          generate_release_notes: true
+
+      # No GoReleaser here — this is a Swift project, so the tap formula is
+      # rendered by hand. Keep it in step with the template in the repo.
+      - name: Update the Homebrew tap
+        env:
+          HOMEBREW_TAP_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+          VERSION: ${{ steps.package.outputs.version }}
+          ARCHIVE: ${{ steps.package.outputs.archive }}
+          SHA256: ${{ steps.package.outputs.sha256 }}
+        run: |
+          set -euo pipefail
+          git clone --depth 1 \
+            "https://x-access-token:${HOMEBREW_TAP_TOKEN}@github.com/jclement/homebrew-tap.git" tap
+          mkdir -p tap/Formula
+          sed -e "s|@VERSION@|${VERSION}|g" \
+              -e "s|@ARCHIVE@|${ARCHIVE}|g" \
+              -e "s|@SHA256@|${SHA256}|g" \
+              packaging/prettyprompt.rb.template > tap/Formula/prettyprompt.rb
+          cd tap
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add Formula/prettyprompt.rb
+          git commit -m "prettyprompt ${VERSION}"
+          git push

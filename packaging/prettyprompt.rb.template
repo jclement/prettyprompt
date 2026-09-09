@@ -1,0 +1,46 @@
+# typed: false
+# frozen_string_literal: true
+
+# Rendered by .github/workflows/release.yml. Do not edit in the tap.
+#
+# prettyprompt ships as an .app bundle rather than a bare binary: a process
+# without an Info.plist cannot reliably take keyboard focus or float above
+# full-screen apps. The bundle goes in libexec and `bin/prettyprompt` execs the
+# executable inside it, which keeps stdin, stdout, stderr and the exit code
+# wired straight through to the caller.
+class Prettyprompt < Formula
+  desc "Beautiful macOS prompts for shell scripts"
+  homepage "https://github.com/jclement/prettyprompt"
+  version "@VERSION@"
+  license "MIT"
+
+  url "https://github.com/jclement/prettyprompt/releases/download/v@VERSION@/@ARCHIVE@"
+  sha256 "@SHA256@"
+
+  depends_on macos: :sonoma
+
+  def install
+    libexec.install "PrettyPrompt.app"
+    (bin/"prettyprompt").write <<~SHIM
+      #!/bin/bash
+      exec "#{libexec}/PrettyPrompt.app/Contents/MacOS/prettyprompt" "$@"
+    SHIM
+    chmod 0755, bin/"prettyprompt"
+  end
+
+  def caveats
+    <<~EOS
+      prettyprompt draws a window, so it needs a logged-in desktop session.
+      It will not work over a bare SSH connection or from a root launchd daemon.
+
+      Try it:
+        prettyprompt themes
+        prettyprompt confirm "Does this look good?" --theme danger
+    EOS
+  end
+
+  test do
+    assert_match version.to_s, shell_output("#{bin}/prettyprompt --version")
+    assert_match "hotdog", shell_output("#{bin}/prettyprompt themes")
+  end
+end

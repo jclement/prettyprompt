@@ -1,0 +1,129 @@
+# prettyprompt — task runner.
+#
+#   mise run setup    once, after cloning
+#   mise run dev      build the app bundle and show a sample prompt
+#   mise run check    lint + test — the gate before calling anything done
+#
+# Everything builds through build-app.sh rather than plain `swift build`,
+# because the thing that gets run is the .app bundle, not the bare binary.
+
+[tools]
+# Swift comes from Xcode; there is no mise plugin worth pinning it with.
+# Xcode 15.3 or newer (Swift 5.9) is the floor, enforced by Package.swift.
+
+[tasks.setup]
+description = "Zero to runnable: resolve dependencies and build the app bundle"
+run = """
+set -euo pipefail
+if ! xcode-select -p >/dev/null 2>&1; then
+  echo "Xcode command line tools are missing. Run: xcode-select --install" >&2
+  exit 1
+fi
+swift package resolve
+./build-app.sh --debug
+echo "✓ ready — try: mise run dev"
+"""
+
+[tasks.dev]
+description = "Build and show a sample prompt"
+run = """
+set -euo pipefail
+./build-app.sh --debug
+./PrettyPrompt.app/Contents/MacOS/prettyprompt choose "prettyprompt is running" \
+  --message "Arrow keys to move, **enter** to pick, \\`esc\\` to cancel." \
+  --icon sparkles \
+  -o "Looks right" -o "Needs work" -o "Show me the themes instead"
+"""
+
+[tasks.build]
+description = "Release build of PrettyPrompt.app for this machine"
+run = "./build-app.sh"
+
+[tasks.test]
+description = "Full test suite"
+run = "swift test"
+
+[tasks.lint]
+description = "Typecheck and format-check. Never mutates files."
+run = """
+set -euo pipefail
+swift build
+swift format lint --recursive --strict --parallel Sources Tests
+"""
+
+[tasks.fmt]
+description = "Apply formatting"
+run = "swift format --in-place --recursive --parallel Sources Tests"
+
+[tasks.check]
+description = "lint + test — the gate before claiming work is done"
+# Sequential rather than `depends`, which runs them in parallel and makes two
+# SwiftPM processes fight over .build.
+run = ["mise run lint", "mise run test"]
+
+[tasks.icon]
+description = "Regenerate Resources/AppIcon.icns"
+run = "./scripts/make-icon.sh"
+
+[tasks.gallery]
+description = "Render the theme screenshots in docs/gallery"
+run = "swift run gallery docs/gallery"
+
+[tasks.install]
+description = "Install PrettyPrompt.app and a prettyprompt shim into ~/.local/bin"
+run = """
+set -euo pipefail
+./build-app.sh
+rm -rf ~/.local/share/PrettyPrompt.app
+mkdir -p ~/.local/share ~/.local/bin
+cp -R PrettyPrompt.app ~/.local/share/PrettyPrompt.app
+sed "s|@BUNDLE@|$HOME/.local/share/PrettyPrompt.app|" scripts/prettyprompt-shim.sh > ~/.local/bin/prettyprompt
+chmod +x ~/.local/bin/prettyprompt
+echo "✓ installed ~/.local/bin/prettyprompt"
+"""
+
+[tasks.clean]
+description = "Remove build artifacts and the local bundle"
+run = "swift package clean && rm -rf .build PrettyPrompt.app"
+
+[tasks."dev:reset"]
+description = "Blow away local state: build artifacts and the user config"
+run = """
+set -euo pipefail
+swift package reset
+rm -rf .build PrettyPrompt.app
+rm -rf "${XDG_CONFIG_HOME:-$HOME/.config}/prettyprompt"
+echo "✓ reset"
+"""
+
+[tasks.release]
+description = "Tag a release. CI builds and publishes it."
+run = """
+set -euo pipefail
+if [ -n "$(git status --porcelain)" ]; then
+  echo "working tree is dirty — commit first" >&2
+  exit 1
+fi
+CURRENT="$(git describe --tags --abbrev=0 2>/dev/null || echo v0.0.0)"
+echo "current: $CURRENT"
+MAJOR=$(echo "${CURRENT#v}" | cut -d. -f1)
+MINOR=$(echo "${CURRENT#v}" | cut -d. -f2)
+PATCH=$(echo "${CURRENT#v}" | cut -d. -f3)
+echo "  1) patch  v$MAJOR.$MINOR.$((PATCH+1))"
+echo "  2) minor  v$MAJOR.$((MINOR+1)).0"
+echo "  3) major  v$((MAJOR+1)).0.0"
+printf "which? [1] "
+read -r CHOICE
+case "${CHOICE:-1}" in
+  1) NEXT="v$MAJOR.$MINOR.$((PATCH+1))" ;;
+  2) NEXT="v$MAJOR.$((MINOR+1)).0" ;;
+  3) NEXT="v$((MAJOR+1)).0.0" ;;
+  *) echo "cancelled" >&2; exit 1 ;;
+esac
+printf "tag and push %s? [y/N] " "$NEXT"
+read -r CONFIRM
+[ "$CONFIRM" = "y" ] || { echo "cancelled"; exit 1; }
+git tag -a "$NEXT" -m "$NEXT"
+git push origin "$NEXT"
+echo "✓ pushed $NEXT — CI is building it"
+"""
