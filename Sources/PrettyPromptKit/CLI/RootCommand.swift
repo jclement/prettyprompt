@@ -36,6 +36,9 @@ public struct RootCommand: ParsableCommand {
               # interrupt a long build
               make || prettyprompt alert "Build failed" --icon ⚠️ --sound
 
+              # destructive confirms make noise unless told otherwise
+              prettyprompt confirm "Drop the DB?" --theme danger --destructive
+
             EXIT CODES
               0    answered  (confirm: yes)
               1    confirm: no — an answer, not an error
@@ -51,13 +54,14 @@ public struct RootCommand: ParsableCommand {
               ~/.config/prettyprompt/config.json    theme, width, timeout
               ~/.config/prettyprompt/themes/*.json  your own themes
 
-            Run `prettyprompt themes` for the eleven built-in looks, and \
+            Run `prettyprompt themes` for the eleven built-in looks, \
+            `prettyprompt sounds` for the fourteen sounds, and \
             `prettyprompt help <subcommand>` for one prompt in detail.
             """,
         version: Version.full,
         subcommands: [
             ChooseCommand.self, InputCommand.self, ConfirmCommand.self,
-            AlertCommand.self, ThemesCommand.self,
+            AlertCommand.self, ThemesCommand.self, SoundsCommand.self,
         ])
 }
 

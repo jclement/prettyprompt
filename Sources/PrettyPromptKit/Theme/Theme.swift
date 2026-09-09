@@ -170,6 +170,10 @@ struct Style: Codable, Equatable {
     var hazardStripes: Bool = false
     var shadowRadius: CGFloat = 40
     var shadowOpacity: Double = 0.34
+    /// The system sound this theme plays when a prompt asks for one. A theme's
+    /// voice is part of its character: danger thuds, hotdog honks. nil falls
+    /// back to a neutral chime.
+    var sound: String?
 
     enum FontWeightName: String, Codable {
         case regular, medium, semibold, bold, heavy

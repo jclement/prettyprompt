@@ -54,8 +54,19 @@ struct PresentationOptions: ParsableArguments {
     @Flag(name: .long, help: "Remove every way out. Esc will not dismiss the prompt.")
     var insist = false
 
-    @Flag(name: .long, help: "Play the system alert sound when the prompt appears.")
-    var sound = false
+    // An inverted flag rather than a plain one, because the default is not
+    // simply "off": a destructive confirm makes noise unless told not to.
+    @Flag(
+        inversion: .prefixedNo,
+        help: "Play a sound when the prompt appears. On by default for `confirm --destructive`."
+    )
+    var sound: Bool?
+
+    @Option(
+        name: .customLong("sound-name"),
+        help: ArgumentHelp(
+            "Which sound. See `prettyprompt sounds`. Implies --sound.", valueName: "name"))
+    var soundName: String?
 
     @Flag(name: .long, help: "Print a JSON object instead of a bare answer.")
     var json = false
@@ -110,8 +121,40 @@ struct PresentationOptions: ParsableArguments {
             timeout: resolvedTimeout,
             timeoutBehaviour: onTimeout,
             insist: insist,
-            sound: sound || (config.sound ?? false),
+            sound: try resolveSound(for: kind, theme: resolvedTheme, config: config),
             screen: resolvedScreen)
+    }
+
+    /// Which sound this prompt should make, or nil for silence.
+    ///
+    /// Precedence: an explicit --sound / --no-sound wins; otherwise a
+    /// destructive confirm or a configured default turns sound on. Once on, the
+    /// name comes from --sound-name, then the theme's own voice, then a neutral
+    /// chime.
+    private func resolveSound(for kind: PromptKind, theme: Theme, config: Config) throws -> String?
+    {
+        if let soundName, Sound.canonical(soundName) == nil {
+            throw ValidationError(
+                "Unknown sound \"\(soundName)\". Available: \(Sound.available.joined(separator: ", "))"
+            )
+        }
+
+        let wantsSound: Bool
+        if let sound {
+            wantsSound = sound
+        } else if soundName != nil {
+            wantsSound = true
+        } else if case let .confirm(confirm) = kind, confirm.destructive {
+            // The whole point of --destructive is that it should be hard to
+            // answer without noticing.
+            wantsSound = true
+        } else {
+            wantsSound = config.sound ?? false
+        }
+        guard wantsSound else { return nil }
+
+        if let soundName { return Sound.canonical(soundName) }
+        return config.soundName.flatMap(Sound.canonical) ?? theme.style.sound ?? Sound.fallback
     }
 
     /// Wide enough for a sentence at the default type size without feeling like

@@ -94,7 +94,8 @@ enum BuiltInThemes {
             uppercaseTitle: true,
             hazardStripes: true,
             shadowRadius: 55,
-            shadowOpacity: 0.75))
+            shadowOpacity: 0.75,
+            sound: "Basso"))
 
     static let doom = Theme.fixed(
         name: "doom",
@@ -117,7 +118,8 @@ enum BuiltInThemes {
             titleWeight: .heavy,
             uppercaseTitle: true,
             shadowRadius: 50,
-            shadowOpacity: 0.7))
+            shadowOpacity: 0.7,
+            sound: "Sosumi"))
 
     static let hotdog = Theme.fixed(
         name: "hotdog",
@@ -140,7 +142,8 @@ enum BuiltInThemes {
             titleWeight: .heavy,
             uppercaseTitle: true,
             shadowRadius: 0,
-            shadowOpacity: 0.5))
+            shadowOpacity: 0.5,
+            sound: "Funk"))
 
     static let matrix = Theme.fixed(
         name: "matrix",
@@ -163,7 +166,8 @@ enum BuiltInThemes {
             titleWeight: .bold,
             uppercaseTitle: false,
             shadowRadius: 40,
-            shadowOpacity: 0.8))
+            shadowOpacity: 0.8,
+            sound: "Submarine"))
 
     static let synthwave = Theme.fixed(
         name: "synthwave",
@@ -186,7 +190,8 @@ enum BuiltInThemes {
             titleWeight: .bold,
             uppercaseTitle: false,
             shadowRadius: 55,
-            shadowOpacity: 0.5))
+            shadowOpacity: 0.5,
+            sound: "Bottle"))
 
     static let nord = Theme.fixed(
         name: "nord",
@@ -209,7 +214,8 @@ enum BuiltInThemes {
             titleWeight: .semibold,
             uppercaseTitle: false,
             shadowRadius: 40,
-            shadowOpacity: 0.4))
+            shadowOpacity: 0.4,
+            sound: "Glass"))
 
     static let paper = Theme.fixed(
         name: "paper",
@@ -232,7 +238,8 @@ enum BuiltInThemes {
             titleWeight: .semibold,
             uppercaseTitle: false,
             shadowRadius: 35,
-            shadowOpacity: 0.28))
+            shadowOpacity: 0.28,
+            sound: "Pop"))
 
     static let terminal = Theme.fixed(
         name: "terminal",
@@ -255,5 +262,6 @@ enum BuiltInThemes {
             titleWeight: .bold,
             uppercaseTitle: false,
             shadowRadius: 30,
-            shadowOpacity: 0.6))
+            shadowOpacity: 0.6,
+            sound: "Tink"))
 }

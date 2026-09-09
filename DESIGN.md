@@ -17,6 +17,7 @@ Sources/
     CLI/
       RootCommand.swift          The command tree: choose, input, confirm, alert.
       ThemesCommand.swift        `themes` — list, preview, export.
+      SoundsCommand.swift        `sounds` — list and play.
       SharedOptions.swift        Flags every prompt understands + config merging.
       PromptSpec.swift           The contract between the CLI and the window.
       PromptOutcome.swift        What came back, and how it reaches stdout.
@@ -42,6 +43,7 @@ Sources/
       Paths.swift                XDG paths, honouring XDG_CONFIG_HOME.
       Version.swift              Version read back out of the bundle's Info.plist.
       StandardInput.swift        Reading choose options from a pipe.
+      Sound.swift                System sound names, lookup and playback.
   gallery/main.swift             Three lines around Gallery.render.
 ```
 
@@ -136,6 +138,33 @@ there, so the views check `\.offscreenRendering` and substitute a flat tint and 
 text. That is the one place production views know about the gallery, and it is the price
 of documentation that cannot drift from the code.
 
+### 11. The focused button is the filled one
+
+Fill used to follow `role`: the affirmative button was always solid, the
+negative always a ghost. That meant `confirm --default-no` focused the ghost
+while the unfocused button stayed solid, and on the `danger` theme — where the
+old focus ring was `accent`, a dark red, on a near-black panel — there was
+almost nothing to see. Fill now follows focus and `role` only supplies the
+tint, so `←`/`→` moves a solid block between the two buttons.
+
+The ring is drawn in `palette.foreground`, which is by construction the colour
+guaranteed to be legible against `palette.background`. The unfocused outline
+uses `palette.secondary` rather than `palette.border`, because on themes like
+`danger` the border colour *is* the bright hazard yellow and an unfocused Cancel
+read as focused.
+
+### 12. Sound is on by default for destructive confirms
+
+Not for anything else. `--destructive` exists to make a prompt hard to answer
+on autopilot, and a sound does more for that than a colour. `--no-sound` turns
+it off, which is why `sound` is an inverted flag (`Bool?`) rather than a plain
+one — the default is neither on nor off but "it depends on the prompt".
+
+Sounds are macOS's own, from `/System/Library/Sounds`, looked up by name
+through `NSSound`. Nothing is bundled: they are the fourteen every Mac already
+has, they cost no binary size, and they carry no licensing question. Each theme
+names one, so a theme has a voice as well as a look.
+
 ## Data model
 
 ```
@@ -153,7 +182,7 @@ Theme               name, summary, appearance, light: Palette, dark: Palette, st
   │                 accent, accentForeground, border, danger
   └── Style         cornerRadius, borderWidth, material, fontFamily,
                     titleSize, titleWeight, uppercaseTitle, hazardStripes,
-                    shadowRadius, shadowOpacity
+                    shadowRadius, shadowOpacity, sound
 ```
 
 Option strings split on the first tab: `value\tdescription`. Chosen because it survives

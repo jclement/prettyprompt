@@ -139,7 +139,8 @@ prettyprompt alert "Backup finished" -b "Nice" --timeout 30
 | `-t, --timeout <seconds>` | Give up after this long |
 | `--on-timeout <cancel\|accept>` | `cancel` exits 124 (default); `accept` submits the current answer |
 | `--insist` | Remove every way out. Esc will not dismiss the prompt |
-| `--sound` | Play the system alert sound as the panel appears |
+| `--sound` / `--no-sound` | Play a sound. **On by default for `confirm --destructive`** |
+| `--sound-name <name>` | Which sound. See `prettyprompt sounds`. Implies `--sound` |
 | `--json` | Print a JSON object instead of a bare answer |
 | `--screen <where>` | `mouse` (default), `focused`, or a 0-based display index |
 
@@ -169,6 +170,42 @@ prettyprompt alert "Run this by hand" --message '```
 kubectl rollout undo deploy/api
 ```'
 ````
+
+---
+
+## Sounds
+
+A destructive confirm makes noise unless you tell it not to — the point of
+`--destructive` is that it should be hard to answer without noticing.
+
+```bash
+prettyprompt confirm "Drop the database?" --theme danger --destructive   # thuds
+prettyprompt confirm "Drop the database?" --destructive --no-sound       # doesn't
+prettyprompt alert "Build finished" --sound                              # opts in
+prettyprompt alert "Build finished" --sound-name Hero                    # picks one
+```
+
+Each theme has its own voice, so `--sound` sounds like the theme you asked for:
+
+| Theme | Sound | |
+|---|---|---|
+| `danger` | Basso | the deep error thud |
+| `doom` | Sosumi | |
+| `hotdog` | Funk | |
+| `matrix` | Submarine | sonar ping |
+| `synthwave` | Bottle | |
+| `nord` | Glass | |
+| `paper` | Pop | |
+| `terminal` | Tink | |
+| everything else | Ping | neutral |
+
+`prettyprompt sounds` lists all fourteen and which themes use them;
+`prettyprompt sounds Basso` plays one; `prettyprompt sounds --all` plays the lot.
+They come from `/System/Library/Sounds` rather than being bundled — they're the
+ones every Mac already has, so there's nothing to ship and nothing to license.
+
+Set a default in the config file with `"sound": true`, and override every
+theme's voice with `"soundName": "Hero"`.
 
 ---
 
@@ -285,6 +322,7 @@ flag.
   "theme": "nord",
   "width": 520,
   "sound": false,
+  "soundName": "Hero",
   "timeout": 120,
   "screen": "mouse"
 }
@@ -294,7 +332,8 @@ flag.
 |---|---|
 | `theme` | Default `--theme` |
 | `width` | Default `--width` |
-| `sound` | Play the alert sound on every prompt |
+| `sound` | Play a sound on every prompt, not just destructive ones |
+| `soundName` | Override every theme's voice |
 | `timeout` | A global safety net for unattended scripts |
 | `screen` | Default `--screen` |
 
@@ -312,6 +351,15 @@ flag.
 | Cancel | `esc`, `⌘.` | `esc`, `⌘.` | `esc`, `⌘.` | `esc`, `⌘.` |
 
 `--insist` removes cancellation entirely.
+
+The focused button is the filled one, so `←`/`→` visibly moves a solid block
+between them. `--default-no` focuses Cancel, which is what you want on anything
+destructive:
+
+<p align="center">
+  <img src="docs/gallery/danger-focus-cancel.png" width="400" alt="Cancel focused">
+  <img src="docs/gallery/danger-focus-action.png" width="400" alt="Deploy focused">
+</p>
 
 ---
 

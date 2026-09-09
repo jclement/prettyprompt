@@ -259,35 +259,61 @@ struct PromptButton: View {
         .onHover { isHovering = $0 }
     }
 
-    private var accent: ThemeColor {
-        role == .destructive ? ui.palette.danger : ui.palette.accent
+    /// The colour that identifies this button's role.
+    private var tint: ThemeColor {
+        switch role {
+        case .primary: return ui.palette.accent
+        case .destructive: return ui.palette.danger
+        case .secondary: return ui.palette.foreground
+        }
     }
 
+    /// Filled when focused, outlined when not.
+    ///
+    /// This used to follow `role` instead, which meant `confirm --default-no`
+    /// focused a ghost button while the unfocused one stayed solid — on the
+    /// danger theme, where the ring was dark red on black, there was almost
+    /// nothing to see. Tying the fill to focus makes ←/→ visibly move a solid
+    /// block between the two buttons.
     private var fill: Color {
+        guard isFocused else {
+            return ui.palette.surface.opacity(isHovering ? 1 : 0.55).color
+        }
         switch role {
         case .primary, .destructive:
-            return accent.opacity(isHovering ? 0.85 : 1).color
+            return tint.opacity(isHovering ? 0.85 : 1).color
         case .secondary:
-            return ui.palette.surface.opacity(isHovering ? 0.9 : 0.55).color
+            // A focused Cancel filled with `foreground` would shout louder than
+            // the action it sits beside, so it keeps the quiet fill and relies
+            // on the ring.
+            return ui.palette.surface.opacity(1).color
         }
     }
 
     private var foreground: Color {
-        switch role {
-        case .primary, .destructive: return ui.palette.accentForeground.color
-        case .secondary: return ui.palette.foreground.color
-        }
+        guard isFocused, role != .secondary else { return tint.color }
+        return ui.palette.accentForeground.color
     }
 
     private var border: Color {
-        role == .secondary ? ui.palette.border.color : .clear
+        // An unfocused action keeps its role's colour as an outline, so a
+        // destructive button still reads as dangerous before you reach it.
+        guard !isFocused else { return .clear }
+        // Not `palette.border`: on themes like danger that is the same bright
+        // colour as the focus ring, so an unfocused Cancel looked focused.
+        // `secondary` is the theme's own "quieter than the text" colour.
+        return role == .secondary
+            ? ui.palette.secondary.opacity(0.5).color
+            : tint.opacity(0.8).color
     }
 
+    /// Always drawn in the theme's foreground colour, which is by construction
+    /// the one guaranteed to be legible against the panel.
     @ViewBuilder private var focusRing: some View {
         if isFocused {
             RoundedRectangle(cornerRadius: ui.controlRadius + 2.5, style: .continuous)
-                .strokeBorder(accent.opacity(0.65).color, lineWidth: 2.5)
-                .padding(-3)
+                .strokeBorder(ui.palette.foreground.opacity(0.8).color, lineWidth: 2)
+                .padding(-3.5)
         }
     }
 }

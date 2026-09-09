@@ -114,7 +114,9 @@ struct PromptSpec {
     var timeoutBehaviour: TimeoutBehaviour = .cancel
     /// Removes Esc and every other way out. The caller gets an answer.
     var insist: Bool = false
-    /// Play the system alert sound as the panel appears.
-    var sound: Bool = false
+    /// The system sound to play as the panel appears, already resolved from
+    /// the flags, the theme and whether this prompt is destructive. nil is
+    /// silence.
+    var sound: String?
     var screen: ScreenChoice = .mouse
 }

@@ -19,6 +19,18 @@ public enum Gallery {
     public static func render(into directory: URL, scale: CGFloat = 2) throws {
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
 
+        // Both focus states of the theme that made the problem visible.
+        for (suffix, yes) in [("focus-action", true), ("focus-cancel", false)] {
+            var spec = confirmSample(theme: BuiltInThemes.danger)
+            spec.kind = .confirm(
+                ConfirmSpec(
+                    affirmative: "Deploy", negative: "Not now",
+                    defaultsToYes: yes, destructive: true))
+            try write(
+                spec: spec,
+                to: directory.appendingPathComponent("danger-\(suffix).png"), scale: scale)
+        }
+
         for theme in BuiltInThemes.all {
             try write(
                 spec: confirmSample(theme: theme),

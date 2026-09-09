@@ -10,6 +10,9 @@ struct Config: Codable, Equatable {
     var theme: String?
     var width: Double?
     var sound: Bool?
+    /// Overrides each theme's own sound. Validated when a prompt is built, so a
+    /// typo here is reported rather than silently ignored.
+    var soundName: String?
     var screen: String?
     /// Seconds. A global timeout is a safety net for scripts that run
     /// unattended — it is off unless set.

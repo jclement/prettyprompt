@@ -33,6 +33,7 @@ public enum PromptError: Error {
     case badConfig(path: String, reason: String)
     case noOptions
     case unknownDefault(value: String)
+    case unknownSound(name: String, available: [String])
     case cannotConnectToWindowServer
 
     public var message: String {
@@ -55,6 +56,11 @@ public enum PromptError: Error {
                 """
         case let .unknownDefault(value):
             return "--default \"\(value)\" is not one of the options."
+        case let .unknownSound(name, available):
+            return """
+                Unknown sound "\(name)".
+                Available: \(available.joined(separator: ", "))
+                """
         case .cannotConnectToWindowServer:
             return """
                 Cannot open a window — there is no macOS session to draw into.

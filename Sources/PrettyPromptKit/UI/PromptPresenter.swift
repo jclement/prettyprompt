@@ -31,7 +31,7 @@ enum PromptPresenter {
 
         NSApp.activate(ignoringOtherApps: true)
         panel.makeKeyAndOrderFront(nil)
-        if spec.sound { NSSound.beep() }
+        if let sound = spec.sound { Sound.play(sound) }
 
         coordinator.startTimeoutIfNeeded()
         application.run()
