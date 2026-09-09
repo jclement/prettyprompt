@@ -42,9 +42,20 @@ jobs:
           VERSION="${TAG#v}"
           ARCHIVE="prettyprompt_${VERSION}_darwin_universal.tar.gz"
           mkdir -p dist
-          # COPYFILE_DISABLE stops tar from embedding ._ AppleDouble files,
-          # which break the signature on extraction.
-          COPYFILE_DISABLE=1 tar -czf "dist/${ARCHIVE}" PrettyPrompt.app
+          # LICENSE and README ride along for a reason beyond politeness:
+          # Homebrew strips a single top-level directory when it stages an
+          # archive, so a tarball containing only PrettyPrompt.app would leave
+          # the formula chdir'd *inside* the bundle, unable to find it.
+          # COPYFILE_DISABLE stops tar embedding ._ AppleDouble files, which
+          # break the signature on extraction.
+          COPYFILE_DISABLE=1 tar -czf "dist/${ARCHIVE}" PrettyPrompt.app LICENSE README.md
+
+          TOP_LEVEL_ENTRIES="$(tar -tzf "dist/${ARCHIVE}" | awk -F/ '{print $1}' | sort -u | wc -l)"
+          if [ "$TOP_LEVEL_ENTRIES" -lt 2 ]; then
+            echo "::error::archive has one top-level entry; Homebrew would strip it and the formula would fail" >&2
+            exit 1
+          fi
+
           SHA="$(shasum -a 256 "dist/${ARCHIVE}" | cut -d' ' -f1)"
           shasum -a 256 "dist/${ARCHIVE}" > dist/checksums.txt
           echo "archive=${ARCHIVE}" >> "$GITHUB_OUTPUT"
