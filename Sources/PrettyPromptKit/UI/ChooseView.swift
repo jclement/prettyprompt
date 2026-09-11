@@ -269,30 +269,46 @@ private struct ChoiceRow: View {
     /// True when --limit is reached and this row cannot be added.
     let isDimmed: Bool
 
+    /// Wrapping is capped so one pathological option — someone piping in a
+    /// whole SSH key — cannot push every other row off the panel. The list
+    /// scrolls past that.
+    private static let valueLineLimit = 3
+    private static let detailLineLimit = 2
+
     var body: some View {
-        HStack(alignment: .center, spacing: 9) {
+        HStack(alignment: .firstTextBaseline, spacing: 9) {
             if showsCheckbox {
                 Image(systemName: isChecked ? "checkmark.square.fill" : "square")
                     .font(.system(size: 13))
                     .foregroundStyle(checkboxColor)
             }
-            VStack(alignment: .leading, spacing: 1) {
+            VStack(alignment: .leading, spacing: 2) {
+                // Options wrap rather than truncate. An option you cannot read
+                // is an option you cannot choose, and real callers pass things
+                // like "Yes, this key for git.example.net — this session".
                 Text(option.value)
                     .font(ui.bodyFont)
                     .foregroundStyle(primaryColor)
-                    .lineLimit(1)
+                    .lineLimit(Self.valueLineLimit)
+                    .multilineTextAlignment(.leading)
+                    .fixedSize(horizontal: false, vertical: true)
                 if let detail = option.detail {
                     Text(detail)
                         .font(ui.captionFont)
                         .foregroundStyle(secondaryColor)
-                        .lineLimit(1)
+                        .lineLimit(Self.detailLineLimit)
+                        .multilineTextAlignment(.leading)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
             }
-            Spacer(minLength: 8)
+            .frame(maxWidth: .infinity, alignment: .leading)
             if let shortcut {
                 Text("⌘\(shortcut)")
                     .font(ui.captionFont)
                     .foregroundStyle(secondaryColor.opacity(0.75))
+                    // Fixed so the badges line up down the right edge however
+                    // wide the labels are.
+                    .frame(width: 22, alignment: .trailing)
             }
         }
         .padding(.horizontal, 10)

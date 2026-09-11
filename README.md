@@ -84,6 +84,14 @@ printf 'prod\tRestarts 3 services\nstaging\tSafe\n' | prettyprompt choose "Where
 Lists longer than seven rows get a filter field and scroll; shorter lists don't.
 `⌘1`…`⌘9` jump straight to a row.
 
+Long labels wrap rather than truncate — up to three lines, after which the list
+scrolls. If you'd rather have the room than the wrapping, widen the panel with
+`--width`.
+
+<p align="center">
+  <img src="docs/gallery/prompt-long-labels.png" width="420" alt="A choose prompt with long option labels">
+</p>
+
 ### `choose --multiple` — pick several
 
 Prints one value per line.

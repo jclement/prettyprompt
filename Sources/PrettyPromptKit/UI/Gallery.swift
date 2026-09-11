@@ -101,6 +101,41 @@ public enum Gallery {
                     theme: theme, width: 460)
             ),
 
+            // A real caller's prompt (an SSH agent asking for approval), kept as
+            // a sample because its option labels are long enough to have
+            // exposed the row-truncation bug.
+            (
+                "long-labels",
+                PromptSpec(
+                    title: "devtun — ssh agent",
+                    message: """
+                        `bedev` is asking for:
+
+                        ssh-rsa SHA256:01tagjHSHRivNwXVT1m8YdyAFc8c8fkFDvvG+usELs4 → git.onewheelgeek.net
+                        """,
+                    icon: "🔒",
+                    kind: .choose(
+                        ChooseSpec(
+                            options: [
+                                ChoiceOption(rawValue: "Yes, once"),
+                                ChoiceOption(
+                                    rawValue: "Yes, this key for git.onewheelgeek.net — 5m0s"),
+                                ChoiceOption(
+                                    rawValue:
+                                        "Yes, this key for git.onewheelgeek.net — this session"),
+                                ChoiceOption(
+                                    rawValue: "Yes, this key for git.onewheelgeek.net — always"),
+                                ChoiceOption(rawValue: "Yes to anything from bedev — 5m0s"),
+                                ChoiceOption(rawValue: "Yes to anything from bedev — this session"),
+                                ChoiceOption(rawValue: "No, and stop asking this session"),
+                                ChoiceOption(
+                                    rawValue:
+                                        "Never, this key for git.onewheelgeek.net (write to config)"
+                                ),
+                            ], preselected: [2])),
+                    theme: BuiltInThemes.danger, width: 460)
+            ),
+
             (
                 "input",
                 PromptSpec(
